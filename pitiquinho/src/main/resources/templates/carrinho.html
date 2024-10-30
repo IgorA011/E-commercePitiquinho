@@ -42,37 +42,45 @@
         <tbody id="carrinho-body"></tbody>
     </table>
 
+    <!-- Campos para endereço de faturamento completo -->
     <div class="mb-3">
-        <label for="cep">CEP:</label>
-        <div class="input-group">
-            <input type="text" id="cep" class="form-control" placeholder="Digite o CEP">
-            <div class="input-group-append">
-                <button class="btn btn-primary" onclick="buscarFrete()">Buscar CEP</button>
+        <h4>Endereço de Faturamento (Obrigatório)</h4>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="cep-faturamento">CEP</label>
+                <input type="text" id="cep-faturamento" class="form-control" placeholder="CEP" required onblur="buscarEndereco()">
+            </div>
+            <div class="col-md-8 mb-3">
+                <label for="logradouro-faturamento">Logradouro</label>
+                <input type="text" id="logradouro-faturamento" class="form-control" placeholder="Rua, Avenida, etc." required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="numero-faturamento">Número</label>
+                <input type="text" id="numero-faturamento" class="form-control" placeholder="Número" required>
+            </div>
+            <div class="col-md-8 mb-3">
+                <label for="complemento-faturamento">Complemento</label>
+                <input type="text" id="complemento-faturamento" class="form-control" placeholder="Complemento (opcional)">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="bairro-faturamento">Bairro</label>
+                <input type="text" id="bairro-faturamento" class="form-control" placeholder="Bairro" required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="cidade-faturamento">Cidade</label>
+                <input type="text" id="cidade-faturamento" class="form-control" placeholder="Cidade" required>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="uf-faturamento">UF</label>
+                <input type="text" id="uf-faturamento" class="form-control" placeholder="UF" required maxlength="2">
             </div>
         </div>
     </div>
 
-    <div id="endereco" class="mb-3"></div>
-
-    <div id="frete-opcoes" class="mb-3" style="display: none;">
-        <label for="opcao-frete">Escolha a opção de frete:</label>
-        <select id="opcao-frete" class="form-control" onchange="atualizarTotal()">
-            <option value="0">Selecione uma opção</option>
-            <option value="10">Frete Normal - R$ 10,00</option>
-            <option value="17">Frete Expresso - R$ 17,00</option>
-            <option value="25">Frete Super Expresso - R$ 25,00</option>
-        </select>
-    </div>
-
-    <!-- Campos para endereço de faturamento e entrega -->
+    <!-- Endereços de entrega -->
     <div class="mb-3">
-        <label for="endereco-faturamento">Endereço de Faturamento:</label>
-        <input type="text" id="endereco-faturamento" class="form-control" placeholder="Endereço de faturamento">
-
         <label>Endereços de Entrega:</label>
-        <ul id="lista-enderecos" class="list-group mb-3">
-            <!-- Lista dinâmica de endereços -->
-        </ul>
+        <ul id="lista-enderecos" class="list-group mb-3"></ul>
 
         <!-- Novo endereço de entrega -->
         <div class="input-group mb-3">
@@ -102,7 +110,7 @@
         </div>
 
         <div class="text-center">
-            <form id="checkout-form" th:if="${usuario != null}" th:action="@{/carrinho/checkout}" method="post" onsubmit="return verificarEndereco()">
+            <form id="checkout-form" th:if="${usuario != null}" th:action="@{/carrinho/checkout}" method="post" onsubmit="return validarFaturamento() && verificarEndereco()">
                 <button type="submit" class="btn btn-success btn-lg">Finalizar Compra</button>
             </form>
             <div th:if="${usuario == null}" class="alert alert-warning" role="alert">
@@ -117,7 +125,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<!-- Script para adicionar e selecionar múltiplos endereços -->
 <script>
     function adicionarEndereco() {
         const endereco = document.getElementById("novo-endereco").value;
@@ -141,11 +148,53 @@
     }
 
     function copiarEndereco() {
-        const faturamento = document.getElementById("endereco-faturamento").value;
-        if (faturamento) {
-            document.getElementById("novo-endereco").value = faturamento;
-            adicionarEndereco();
+        const cep = document.getElementById("cep-faturamento").value;
+        const logradouro = document.getElementById("logradouro-faturamento").value;
+        const numero = document.getElementById("numero-faturamento").value;
+        const complemento = document.getElementById("complemento-faturamento").value;
+        const bairro = document.getElementById("bairro-faturamento").value;
+        const cidade = document.getElementById("cidade-faturamento").value;
+        const uf = document.getElementById("uf-faturamento").value;
+
+        const enderecoCompleto = `${logradouro}, ${numero}, ${complemento ? complemento + ', ' : ''}${bairro}, ${cidade} - ${uf}, CEP: ${cep}`;
+        document.getElementById("novo-endereco").value = enderecoCompleto;
+        adicionarEndereco();
+    }
+
+    function buscarEndereco() {
+        const cep = document.getElementById("cep-faturamento").value.replace(/\D/g, '');
+        if (cep.length === 8) {
+            const url = `https://viacep.com.br/ws/${cep}/json/`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById("logradouro-faturamento").value = data.logradouro;
+                        document.getElementById("bairro-faturamento").value = data.bairro;
+                        document.getElementById("cidade-faturamento").value = data.localidade;
+                        document.getElementById("uf-faturamento").value = data.uf;
+                    } else {
+                        alert("CEP não encontrado.");
+                    }
+                })
+                .catch(error => console.error("Erro ao buscar o endereço:", error));
+        } else {
+            alert("Por favor, insira um CEP válido.");
         }
+    }
+
+    function validarFaturamento() {
+        const camposObrigatorios = [
+            "cep-faturamento", "logradouro-faturamento", "numero-faturamento",
+            "bairro-faturamento", "cidade-faturamento", "uf-faturamento"
+        ];
+        for (const campo of camposObrigatorios) {
+            if (!document.getElementById(campo).value) {
+                alert("Por favor, preencha todos os campos obrigatórios do endereço de faturamento.");
+                return false;
+            }
+        }
+        return true;
     }
 
     function verificarEndereco() {
