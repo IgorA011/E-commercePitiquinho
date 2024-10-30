@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.w3.org/1999/xhtml">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +8,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/js/carrinho.js"></script>
 </head>
-
 <body>
-
 <div class="container mt-5">
-
     <header class="text-center mb-4">
         <div class="d-flex justify-content-between align-items-center">
-
             <div th:if="${usuario == null}" class="d-flex align-items-center">
                 <a href="/login" class="btn btn-outline-primary me-2">Faça Login/Crie seu Login</a>
             </div>
@@ -24,9 +19,7 @@
                 <span class="me-3" th:text="'Bem-vindo, ' + ${usuario.nome}"></span>
                 <a href="/logout" class="btn btn-danger">Logout</a>
             </div>
-
         </div>
-
     </header>
 
     <div class="d-flex justify-content-between mb-3">
@@ -67,8 +60,28 @@
             <option value="0">Selecione uma opção</option>
             <option value="10">Frete Normal - R$ 10,00</option>
             <option value="17">Frete Expresso - R$ 17,00</option>
-            <option value="25">Frete Super Expresso - R$ 25,00</option> <!-- Nova opção de frete -->
+            <option value="25">Frete Super Expresso - R$ 25,00</option>
         </select>
+    </div>
+
+    <!-- Campos para endereço de faturamento e entrega -->
+    <div class="mb-3">
+        <label for="endereco-faturamento">Endereço de Faturamento:</label>
+        <input type="text" id="endereco-faturamento" class="form-control" placeholder="Endereço de faturamento">
+
+        <label>Endereços de Entrega:</label>
+        <ul id="lista-enderecos" class="list-group mb-3">
+            <!-- Lista dinâmica de endereços -->
+        </ul>
+
+        <!-- Novo endereço de entrega -->
+        <div class="input-group mb-3">
+            <input type="text" id="novo-endereco" class="form-control" placeholder="Adicionar novo endereço de entrega">
+            <div class="input-group-append">
+                <button class="btn btn-primary" onclick="adicionarEndereco()">Adicionar</button>
+                <button class="btn btn-secondary" onclick="copiarEndereco()">Copiar Endereço de Faturamento</button>
+            </div>
+        </div>
     </div>
 
     <div class="card p-3 mb-3">
@@ -89,27 +102,61 @@
         </div>
 
         <div class="text-center">
-            <form id="checkout-form" th:if="${usuario != null}" th:action="@{/carrinho/checkout}" method="post" onsubmit="return verificarFrete()">
+            <form id="checkout-form" th:if="${usuario != null}" th:action="@{/carrinho/checkout}" method="post" onsubmit="return verificarEndereco()">
                 <button type="submit" class="btn btn-success btn-lg">Finalizar Compra</button>
             </form>
-
             <div th:if="${usuario == null}" class="alert alert-warning" role="alert">
                 Você precisa estar logado para finalizar a compra.
                 <a href="/login?redirect=carrinho" class="alert-link">Clique aqui para fazer login</a>.
             </div>
         </div>
-
-
-
     </div>
-
 </div>
-
-
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Script para adicionar e selecionar múltiplos endereços -->
+<script>
+    function adicionarEndereco() {
+        const endereco = document.getElementById("novo-endereco").value;
+        if (endereco) {
+            const lista = document.getElementById("lista-enderecos");
+            const item = document.createElement("li");
+            item.className = "list-group-item d-flex justify-content-between align-items-center";
+            item.innerHTML = `
+                <span>${endereco}</span>
+                <button class="btn btn-danger btn-sm" onclick="removerEndereco(this)">Remover</button>
+                <input type="checkbox" name="enderecos-selecionados" value="${endereco}" required>
+            `;
+            lista.appendChild(item);
+            document.getElementById("novo-endereco").value = "";
+        }
+    }
+
+    function removerEndereco(button) {
+        const item = button.closest("li");
+        item.remove();
+    }
+
+    function copiarEndereco() {
+        const faturamento = document.getElementById("endereco-faturamento").value;
+        if (faturamento) {
+            document.getElementById("novo-endereco").value = faturamento;
+            adicionarEndereco();
+        }
+    }
+
+    function verificarEndereco() {
+        const selecionados = document.querySelectorAll('input[name="enderecos-selecionados"]:checked');
+        if (selecionados.length === 0) {
+            alert("Por favor, selecione pelo menos um endereço de entrega.");
+            return false;
+        }
+        return true;
+    }
+</script>
 
 </body>
 </html>
